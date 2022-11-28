@@ -328,15 +328,15 @@ bool uart_is_interrupting(struct uart *uart)
     return interrupting;
 }
 
-struct virtio *virtio_new(uint8_t *disk)
+struct disk *disk_new(uint8_t *disk)
 {
-    struct virtio *vio = calloc(1, sizeof(struct virtio));
+    struct disk *vio = calloc(1, sizeof(struct disk));
     vio->disk = disk;
     vio->notify = -1;
     return vio;
 }
 
-exception_t virtio_load(const struct virtio *vio,
+exception_t disk_load(const struct disk *vio,
                         const uint64_t addr,
                         const uint64_t size,
                         uint64_t *result)
@@ -345,31 +345,31 @@ exception_t virtio_load(const struct virtio *vio,
         return LOAD_ACCESS_FAULT;
 
     switch (addr) {
-    case VIRTIO_MAGIC:
+    case DISK_MAGIC:
         *result = 0x666F7864;
         break;
-    case VIRTIO_VERSION:
+    case DISK_VERSION:
         *result = 0x01;
         break;
-    case VIRTIO_NOTIFY:
+    case DISK_NOTIFY:
         *result = vio->notify;
         break;
-    case VIRTIO_DIRECTION:
+    case DISK_DIRECTION:
         *result = vio->direction;
         break;
-    case VIRTIO_BUFFER_ADDR_HIGH:
+    case DISK_BUFFER_ADDR_HIGH:
         *result = vio->buffer_address_high;
         break;
-    case VIRTIO_BUFFER_ADDR_LOW:
+    case DISK_BUFFER_ADDR_LOW:
         *result = vio->buffer_address_low;
         break;
-    case VIRTIO_BUFFER_LEN_HIGH:
+    case DISK_BUFFER_LEN_HIGH:
         *result = vio->buffer_length_high;
         break;
-    case VIRTIO_BUFFER_LEN_LOW:
+    case DISK_BUFFER_LEN_LOW:
         *result = vio->buffer_length_low;
         break;
-    case VIRTIO_SECTOR:
+    case DISK_SECTOR:
         *result = vio->sector;
         break;
     default:
@@ -378,7 +378,7 @@ exception_t virtio_load(const struct virtio *vio,
     return OK;
 }
 
-exception_t virtio_store(struct virtio *vio,
+exception_t disk_store(struct disk *vio,
                          const uint64_t addr,
                          const uint64_t size,
                          const uint64_t value)
@@ -387,32 +387,32 @@ exception_t virtio_store(struct virtio *vio,
         return STORE_AMO_ACCESS_FAULT;
 
     switch (addr) {
-    case VIRTIO_NOTIFY:
+    case DISK_NOTIFY:
         vio->notify = value;
         break;
-    case VIRTIO_DIRECTION:
+    case DISK_DIRECTION:
         vio->direction = value;
         break;
-    case VIRTIO_BUFFER_ADDR_HIGH:
+    case DISK_BUFFER_ADDR_HIGH:
         vio->buffer_address_high = value;
         break;
-    case VIRTIO_BUFFER_ADDR_LOW:
+    case DISK_BUFFER_ADDR_LOW:
         vio->buffer_address_low = value;
         break;
-    case VIRTIO_BUFFER_LEN_HIGH:
+    case DISK_BUFFER_LEN_HIGH:
         vio->buffer_length_high = value;
         break;
-    case VIRTIO_BUFFER_LEN_LOW:
+    case DISK_BUFFER_LEN_LOW:
         vio->buffer_length_low = value;
         break;
-    case VIRTIO_SECTOR:
+    case DISK_SECTOR:
         vio->sector = value;
         break;
     }
     return OK;
 }
 
-static inline bool virtio_is_interrupting(struct virtio *vio)
+static inline bool disk_is_interrupting(struct disk *vio)
 {
     if (vio->notify != -1) {
         vio->notify = -1;
@@ -421,22 +421,22 @@ static inline bool virtio_is_interrupting(struct virtio *vio)
     return false;
 }
 
-static inline uint64_t virtio_disk_read(const struct virtio *vio, uint64_t addr)
+static inline uint64_t disk_disk_read(const struct disk *vio, uint64_t addr)
 {
     return vio->disk[addr];
 }
 
-static inline void virtio_disk_write(struct virtio *vio,
+static inline void disk_disk_write(struct disk *vio,
                                      uint64_t addr,
                                      uint64_t value)
 {
     vio->disk[addr] = (uint8_t) value;
 }
 
-struct bus *bus_new(struct ram *ram, struct virtio *vio)
+struct bus *bus_new(struct ram *ram, struct disk *vio)
 {
     struct bus *bus = calloc(1, sizeof(struct bus));
-    bus->ram = ram, bus->virtio = vio;
+    bus->ram = ram, bus->disk = vio;
     bus->clint = clint_new(), bus->plic = plic_new(), bus->uart = uart_new();
     return bus;
 }
@@ -452,8 +452,8 @@ exception_t bus_load(const struct bus *bus,
         return plic_load(bus->plic, addr, size, result);
     if (RANGE_CHECK(addr, UART_BASE, UART_SIZE))
         return uart_load(bus->uart, addr, size, result);
-    if (RANGE_CHECK(addr, VIRTIO_BASE, VIRTIO_SIZE))
-        return virtio_load(bus->virtio, addr, size, result);
+    if (RANGE_CHECK(addr, DISK_BASE, DISK_SIZE))
+        return disk_load(bus->disk, addr, size, result);
     if (RAM_BASE <= addr)
         return ram_load(bus->ram, addr, size, result);
 
@@ -471,8 +471,8 @@ exception_t bus_store(struct bus *bus,
         return plic_store(bus->plic, addr, size, value);
     if (RANGE_CHECK(addr, UART_BASE, UART_SIZE))
         return uart_store(bus->uart, addr, size, value);
-    if (RANGE_CHECK(addr, VIRTIO_BASE, VIRTIO_SIZE))
-        return virtio_store(bus->virtio, addr, size, value);
+    if (RANGE_CHECK(addr, DISK_BASE, DISK_SIZE))
+        return disk_store(bus->disk, addr, size, value);
     if (RAM_BASE <= addr)
         return ram_store(bus->ram, addr, size, value);
 
@@ -484,27 +484,27 @@ void bus_disk_access(struct bus *bus)
     uint32_t address_high;
     uint32_t address_low;
     uint64_t address;
-    if (bus_load(bus, VIRTIO_BUFFER_ADDR_HIGH, 32, &address_high) != OK)
+    if (bus_load(bus, DISK_BUFFER_ADDR_HIGH, 32, &address_high) != OK)
         fatal("read high address");
-    if (bus_load(bus, VIRTIO_BUFFER_ADDR_LOW, 32, &address_low) != OK)
+    if (bus_load(bus, DISK_BUFFER_ADDR_LOW, 32, &address_low) != OK)
         fatal("read low address");
     address = address_high << 32 | address_low;
 
     uint32_t length_high;
     uint32_t length_low;
     uint64_t length;
-    if (bus_load(bus, VIRTIO_BUFFER_LEN_HIGH, 32, &length_high) != OK)
+    if (bus_load(bus, DISK_BUFFER_LEN_HIGH, 32, &length_high) != OK)
         fatal("read high length");
-    if (bus_load(bus, VIRTIO_BUFFER_LEN_LOW, 32, &length_low) != OK)
+    if (bus_load(bus, DISK_BUFFER_LEN_LOW, 32, &length_low) != OK)
         fatal("read low length");
     length = length_high << 32 | length_low;
 
     uint32_t sector;
-    if (bus_load(bus, VIRTIO_SECTOR, 32, &sector) != OK)
+    if (bus_load(bus, DISK_SECTOR, 32, &sector) != OK)
         fatal("read sector");
 
     uint32_t direction;
-    if (bus_load(bus, VIRTIO_DIRECTION, 32, &direction) != OK)
+    if (bus_load(bus, DISK_DIRECTION, 32, &direction) != OK)
         fatal("read direction");
 
     if (direction == 1) {
@@ -513,12 +513,12 @@ void bus_disk_access(struct bus *bus)
             uint64_t data;
             if (bus_load(bus, address + i, 8, &data) != OK)
                 fatal("read from RAM");
-            virtio_disk_write(bus->virtio, sector * 512 + i, data);
+            disk_disk_write(bus->disk, sector * 512 + i, data);
         }
     } else {
         /* Read disk data and write it to RAM directly (DMA). */
         for (uint64_t i = 0; i < length; i++) {
-            uint64_t data = virtio_disk_read(bus->virtio, sector * 512 + i);
+            uint64_t data = disk_disk_read(bus->disk, sector * 512 + i);
             if (bus_store(bus, address + i, 8, data) != OK)
                 fatal("write to RAM");
         }
@@ -532,7 +532,7 @@ struct cpu *cpu_new(uint8_t *code, const size_t code_size, uint8_t *disk)
     /* Initialize the sp(x2) register. */
     cpu->regs[2] = RAM_BASE + RAM_SIZE;
 
-    cpu->bus = bus_new(ram_new(code, code_size), virtio_new(disk));
+    cpu->bus = bus_new(ram_new(code, code_size), disk_new(disk));
     cpu->pc = RAM_BASE, cpu->mode = MACHINE;
 
     return cpu;
@@ -1368,7 +1368,7 @@ void cpu_take_trap(struct cpu *cpu, const exception_t e, const interrupt_t intr)
     }
 }
 
-enum { VIRTIO_IRQ = 1, UART_IRQ = 10 };
+enum { DISK_IRQ = 1, UART_IRQ = 10 };
 
 interrupt_t cpu_check_pending_interrupt(struct cpu *cpu)
 {
@@ -1381,9 +1381,9 @@ interrupt_t cpu_check_pending_interrupt(struct cpu *cpu)
         uint64_t irq;
         if (uart_is_interrupting(cpu->bus->uart)) {
             irq = UART_IRQ;
-        } else if (virtio_is_interrupting(cpu->bus->virtio)) {
+        } else if (disk_is_interrupting(cpu->bus->disk)) {
             bus_disk_access(cpu->bus);
-            irq = VIRTIO_IRQ;
+            irq = DISK_IRQ;
         } else
             break;
 

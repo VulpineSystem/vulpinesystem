@@ -28,19 +28,17 @@ enum { UART_RHR = UART_BASE, UART_THR = UART_BASE };
 enum { UART_LCR = UART_BASE + 3, UART_LSR = UART_BASE + 5 };
 enum { UART_LSR_RX = 1, UART_LSR_TX = 1 << 5 };
 
-#define VIRTIO_BASE 0x10001000
-#define VIRTIO_SIZE 0x100
-#define VIRTIO_MAGIC (VIRTIO_BASE + 0x000)
-#define VIRTIO_VERSION (VIRTIO_BASE + 0x004)
-#define VIRTIO_NOTIFY (VIRTIO_BASE + 0x008)
-#define VIRTIO_DIRECTION (VIRTIO_BASE + 0x00C)
-#define VIRTIO_BUFFER_ADDR_HIGH (VIRTIO_BASE + 0x010)
-#define VIRTIO_BUFFER_ADDR_LOW (VIRTIO_BASE + 0x014)
-#define VIRTIO_BUFFER_LEN_HIGH (VIRTIO_BASE + 0x018)
-#define VIRTIO_BUFFER_LEN_LOW (VIRTIO_BASE + 0x01C)
-#define VIRTIO_SECTOR (VIRTIO_BASE + 0x020)
-
-enum { VIRTIO_VRING_DESC_SIZE = 16, VIRTIO_DESC_NUM = 8 };
+#define DISK_BASE 0x10001000
+#define DISK_SIZE 0x100
+#define DISK_MAGIC (DISK_BASE + 0x000)
+#define DISK_VERSION (DISK_BASE + 0x004)
+#define DISK_NOTIFY (DISK_BASE + 0x008)
+#define DISK_DIRECTION (DISK_BASE + 0x00C)
+#define DISK_BUFFER_ADDR_HIGH (DISK_BASE + 0x010)
+#define DISK_BUFFER_ADDR_LOW (DISK_BASE + 0x014)
+#define DISK_BUFFER_LEN_HIGH (DISK_BASE + 0x018)
+#define DISK_BUFFER_LEN_LOW (DISK_BASE + 0x01C)
+#define DISK_SECTOR (DISK_BASE + 0x020)
 
 /* USER is a mode for application which runs on operating system.
  * SUPERVISOR is a mode for operating system.
@@ -63,7 +61,7 @@ struct bus {
     struct clint *clint;
     struct plic *plic;
     struct uart *uart;
-    struct virtio *virtio;
+    struct disk *disk;
 };
 
 struct ram {
@@ -90,7 +88,7 @@ struct uart {
     pthread_cond_t cond;
 };
 
-struct virtio {
+struct disk {
     uint32_t buffer_address_high;
     uint32_t buffer_address_low;
     uint32_t buffer_length_high;
