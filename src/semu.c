@@ -505,9 +505,7 @@ void bus_disk_access(struct bus *bus)
 
     uint32_t direction;
     if (bus_load(bus, VIRTIO_DIRECTION, 32, &direction) != OK)
-        fatal("read notify");
-
-    printf("disk access! buffer address: %X, buffer length: %X, sector: %X\n", address, length, sector);
+        fatal("read direction");
 
     if (direction == 1) {
         /* Read RAM data and write it to a disk directly (DMA). */
