@@ -39,6 +39,11 @@ enum { UART_LSR_RX = 1, UART_LSR_TX = 1 << 5 };
 #define DISK_BUFFER_LEN_HIGH (DISK_BASE + 0x018)
 #define DISK_BUFFER_LEN_LOW (DISK_BASE + 0x01C)
 #define DISK_SECTOR (DISK_BASE + 0x020)
+#define DISK_DONE (DISK_BASE + 0x024)
+
+#define KBD_BASE 0x10002000
+#define KBD_SIZE 0x100
+#define KBD_GET (KBD_BASE + 0x000)
 
 /* USER is a mode for application which runs on operating system.
  * SUPERVISOR is a mode for operating system.
@@ -96,6 +101,7 @@ struct disk {
     uint32_t sector;
     uint32_t notify;
     uint32_t direction;
+    uint32_t done;
     uint8_t *disk;
 };
 

@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "framebuffer.h"
+#include "keyboard.h"
 #include "screen.h"
 #include "semu.h"
 
@@ -59,8 +60,8 @@ int main(int argc, char *argv[]) {
     ScreenCreate(
         FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT,
         draw_framebuffer,
-        NULL,
-        NULL,
+        key_pressed,
+        key_released,
         NULL,
         NULL,
         NULL

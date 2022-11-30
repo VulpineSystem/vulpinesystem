@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "keyboard.h"
 #include "semu.h"
 #include "mul128.h"
 
@@ -372,6 +373,9 @@ exception_t disk_load(const struct disk *vio,
     case DISK_SECTOR:
         *result = vio->sector;
         break;
+    case DISK_DONE:
+        *result = vio->done;
+        break;
     default:
         *result = 0;
     }
@@ -408,6 +412,9 @@ exception_t disk_store(struct disk *vio,
     case DISK_SECTOR:
         vio->sector = value;
         break;
+    case DISK_DONE:
+        vio->done = value;
+        break;
     }
     return OK;
 }
@@ -433,6 +440,22 @@ static inline void disk_disk_write(struct disk *vio,
     vio->disk[addr] = (uint8_t) value;
 }
 
+exception_t kbd_load(const uint64_t addr,
+                    const uint64_t size,
+                    uint64_t *result)
+{
+    if (size != 32)
+        return LOAD_ACCESS_FAULT;
+
+    switch (addr) {
+    case KBD_GET:
+        *result = (uint64_t) key_take();
+    default:
+        *result = 0;
+    }
+    return OK;
+}
+
 struct bus *bus_new(struct ram *ram, struct disk *vio)
 {
     struct bus *bus = calloc(1, sizeof(struct bus));
@@ -454,6 +477,8 @@ exception_t bus_load(const struct bus *bus,
         return uart_load(bus->uart, addr, size, result);
     if (RANGE_CHECK(addr, DISK_BASE, DISK_SIZE))
         return disk_load(bus->disk, addr, size, result);
+    if (RANGE_CHECK(addr, KBD_BASE, KBD_SIZE))
+        return kbd_load(addr, size, result);
     if (RAM_BASE <= addr)
         return ram_load(bus->ram, addr, size, result);
 
@@ -523,6 +548,9 @@ void bus_disk_access(struct bus *bus)
                 fatal("write to RAM");
         }
     }
+
+    if (bus_store(bus, DISK_DONE, 32, 0) != OK)
+        fatal("write done");
 }
 
 struct cpu *cpu_new(uint8_t *code, const size_t code_size, uint8_t *disk)
