@@ -42,19 +42,17 @@ int main(int argc, char *argv[]) {
     if (!f)
         fatal("open raw kernel image");
 
-    uint8_t *binary = NULL, *disk = NULL;
+    uint8_t *binary = NULL;
     size_t fsize = read_file(f, &binary);
     fclose(f);
 
     if (argc == 3) {
-        f = fopen(argv[2], "rb");
+        f = fopen(argv[2], "r+b");
         if (!f)
             fatal("open disk image");
-        read_file(f, &disk);
-        fclose(f);
     }
 
-    cpu = cpu_new(binary, fsize, disk);
+    cpu = cpu_new(binary, fsize, f);
     free(binary);
 
     ScreenCreate(
@@ -85,6 +83,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    fclose(f);
     return 0;
 }
 

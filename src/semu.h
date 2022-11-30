@@ -102,7 +102,7 @@ struct disk {
     uint32_t notify;
     uint32_t direction;
     uint32_t done;
-    uint8_t *disk;
+    FILE *disk;
 };
 
 typedef enum {
@@ -133,7 +133,7 @@ typedef enum {
 void fatal(const char *msg);
 bool exception_is_fatal(const exception_t e);
 size_t read_file(FILE *f, uint8_t *r[]);
-struct cpu *cpu_new(uint8_t *code, const size_t code_size, uint8_t *disk);
+struct cpu *cpu_new(uint8_t *code, const size_t code_size, FILE *disk);
 exception_t cpu_fetch(struct cpu *cpu, uint64_t *result);
 void cpu_take_trap(struct cpu *cpu, const exception_t e, const interrupt_t intr);
 exception_t cpu_execute(struct cpu *cpu, const uint64_t insn);

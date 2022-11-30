@@ -329,7 +329,7 @@ bool uart_is_interrupting(struct uart *uart)
     return interrupting;
 }
 
-struct disk *disk_new(uint8_t *disk)
+struct disk *disk_new(FILE *disk)
 {
     struct disk *vio = calloc(1, sizeof(struct disk));
     vio->disk = disk;
@@ -428,16 +428,21 @@ static inline bool disk_is_interrupting(struct disk *vio)
     return false;
 }
 
-static inline uint64_t disk_disk_read(const struct disk *vio, uint64_t addr)
+static inline uint64_t disk_read(const struct disk *vio, uint64_t addr)
 {
-    return vio->disk[addr];
+    uint8_t buffer;
+    fseek(vio->disk, addr, SEEK_SET);
+    fread(&buffer, 1, 1, vio->disk);
+    return (uint64_t) buffer;
 }
 
-static inline void disk_disk_write(struct disk *vio,
+static inline void disk_write(struct disk *vio,
                                      uint64_t addr,
                                      uint64_t value)
 {
-    vio->disk[addr] = (uint8_t) value;
+    uint8_t buffer = (uint8_t) value;
+    fseek(vio->disk, addr, SEEK_SET);
+    fwrite(&buffer, 1, 1, vio->disk);
 }
 
 exception_t kbd_load(const uint64_t addr,
@@ -539,12 +544,12 @@ void bus_disk_access(struct bus *bus)
             uint64_t data;
             if (bus_load(bus, address + i, 8, &data) != OK)
                 fatal("read from RAM");
-            disk_disk_write(bus->disk, sector * 512 + i, data);
+            disk_write(bus->disk, sector * 512 + i, data);
         }
     } else {
         /* Read disk data and write it to RAM directly (DMA). */
         for (uint64_t i = 0; i < length; i++) {
-            uint64_t data = disk_disk_read(bus->disk, sector * 512 + i);
+            uint64_t data = disk_read(bus->disk, sector * 512 + i);
             if (bus_store(bus, address + i, 8, data) != OK)
                 fatal("write to RAM");
         }
@@ -554,7 +559,7 @@ void bus_disk_access(struct bus *bus)
         fatal("write done");
 }
 
-struct cpu *cpu_new(uint8_t *code, const size_t code_size, uint8_t *disk)
+struct cpu *cpu_new(uint8_t *code, const size_t code_size, FILE *disk)
 {
     struct cpu *cpu = calloc(1, sizeof(struct cpu));
 
