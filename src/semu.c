@@ -450,6 +450,7 @@ exception_t kbd_load(const uint64_t addr,
     switch (addr) {
     case KBD_GET:
         *result = (uint64_t) key_take();
+        break;
     default:
         *result = 0;
     }
