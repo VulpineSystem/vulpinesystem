@@ -18,7 +18,7 @@ Simply run `make`. The resulting binary will be saved as `vulpinesystem`.
 
 `./vulpinesystem <raw kernel image> [<disk image>]`
 
-The most common use case is passing the [**xv6**](https://github.com/VulpineSystem/xv6) kernel image as the first argument, and the filesystem image as the second argument: `./vulpinesystem kernel.bin fs.img`
+The most common use case is passing the [**xv6**](https://github.com/VulpineSystem/xv6) kernel image as the first argument, and the filesystem image as the second argument: `./vulpinesystem ../xv6/kernel/xv6 ../xv6/fs.img`
 
 ## License
 This project is licensed under the [MIT license](LICENSE).
