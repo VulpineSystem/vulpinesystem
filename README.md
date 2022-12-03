@@ -24,5 +24,9 @@ The most common use case is passing the [**xv6**](https://github.com/VulpineSyst
 
 Note that the prebuilt RISC-V toolchains are compiled with the compressed instructions extension enabled. VulpineSystem does not support compressed instructions, so you will have to build a toolchain with that extension disabled. Follow the "Installation (Newlib)" instructions [here](https://github.com/riscv-collab/riscv-gnu-toolchain), but when running the `./configure` command, add `--with-arch=rv64g`. I also recommend running `make` with `-j12` (replace 12 with how many threads your CPU has) in order to speed up the build process.
 
+## News
+
+I often post news about what I'm working on with VulpineSystem and xv6 on Cohost! You can find my posts about this [here](https://cohost.org/rc/tagged/vulpinesystem).
+
 ## License
 This project is licensed under the [MIT license](LICENSE).
